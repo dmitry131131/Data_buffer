@@ -20,7 +20,7 @@ Include = -Iinclude -IColor_console_output/include/
 Sources = DataBuffer.cpp DataBufferErrors.cpp
 Main = main.cpp
 
-LibObjects = Color_console_output/build/Color_output.o
+Libs = -LColor_console_output/build -lColor_output
 
 Source = $(addprefix $(SourcePrefix), $(Sources))
 MainObject = $(patsubst %.cpp, $(BuildPrefix)%.o, $(Main))
@@ -43,9 +43,9 @@ $(BuildPrefix)%.o : $(SourcePrefix)%.cpp
 	@echo [CXX] -c $< -o $@
 	@$(CXX) $(CXXFLAGS) $(Include) -c $< -o $@
 
-$(TARGET) : $(LibObjects) $(objects) $(MainObject)
+$(TARGET) : $(objects) $(MainObject)
 	@echo [CC] $^ -o $@
-	@$(CXX) $(CXXFLAGS) $(Include) $(Libs) $^ -o $@
+	@$(CXX) $(CXXFLAGS) $(Include) $^ $(Libs) -o $@
 
 clean :
 	cd Color_console_output && make clean
