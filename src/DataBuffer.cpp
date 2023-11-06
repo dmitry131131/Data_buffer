@@ -94,7 +94,7 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...)
     va_list arguments;
     va_start(arguments, format);
 
-    buffer->bufferPointer += (size_t) vsprintf(buffer->Buffer, format, arguments);
+    buffer->bufferPointer += (size_t) vsprintf(buffer->Buffer + buffer->bufferPointer, format, arguments);
     return 0;
 }
 
