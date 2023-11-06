@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #include "DataBufferErrors.h"
 #include "DataBuffer.h"
@@ -83,6 +84,18 @@ static dataBufferErrorCode create_buffer(char** buffer, size_t size)
     }
 
     return NO_DATA_BUFFER_ERRORS;
+}
+
+int print_to_buffer(outputBuffer* buffer, const char* format, ...)
+{
+    assert(buffer);
+    assert(format);
+
+    va_list arguments;
+    va_start(arguments, format);
+
+    buffer->bufferPointer += vsprintf(buffer->Buffer, format, arguments);
+    return 0;
 }
 
 int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
