@@ -100,15 +100,17 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...)
     assert(format);
 
     va_list arguments;
+    va_list fakeArguments;
     va_start(arguments, format);
+    va_start(fakeArguments, format);
+    
+    size_t stringLen = (size_t) vsnprintf(NULL, 0, format, fakeArguments);
 
-    size_t stringLen = (size_t) vsnprintf(NULL, 0, format, arguments);
-
-    if (buffer->bufferPointer >= (BUFFER_SIZE) - stringLen)
+    if (buffer->bufferPointer >= (BUFFER_SIZE - stringLen))
     {
         if (buffer->AUTO_FLUSH)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            write_buffer_to_file(buffer, buffer->filePointer);
             clean_buffer(buffer);
         }
         else
@@ -116,8 +118,9 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...)
             return 1;
         }
     }
-
+    
     buffer->bufferPointer += (size_t) vsprintf(buffer->Buffer + buffer->bufferPointer, format, arguments);
+
     return 0;
 }
 
@@ -129,7 +132,7 @@ int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
     {
         if (buffer->AUTO_FLUSH)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            write_buffer_to_file(buffer, buffer->filePointer);
             clean_buffer(buffer);
         }
         else
@@ -154,7 +157,7 @@ int write_int_to_buffer(outputBuffer* buffer, int num)
     {
         if (buffer->AUTO_FLUSH)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            write_buffer_to_file(buffer, buffer->filePointer);
             clean_buffer(buffer);
         }
         else
@@ -183,7 +186,7 @@ int write_double_to_buffer(outputBuffer* buffer, double num)
     {
         if (buffer->AUTO_FLUSH)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            write_buffer_to_file(buffer, buffer->filePointer);
             clean_buffer(buffer);
         }
         else
