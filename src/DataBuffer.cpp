@@ -209,9 +209,19 @@ int write_buffer_to_file(outputBuffer* buffer, FILE* file)
 {
     assert(buffer);
 
-    if (fwrite(buffer->Buffer, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
+    if (file)
     {
-        RET_ERR(FWRITE_ERROR);
+        if (fwrite(buffer->Buffer, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
+        {
+            RET_ERR(FWRITE_ERROR);
+        }
+    }
+    else
+    {
+        if (fwrite(buffer->Buffer, sizeof(char), buffer->bufferPointer, buffer->filePointer) != buffer->bufferPointer)
+        {
+            RET_ERR(FWRITE_ERROR);
+        }
     }
 
     return 0;
