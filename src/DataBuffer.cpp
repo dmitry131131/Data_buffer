@@ -4,6 +4,8 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <assert.h>
 #include <stdarg.h>
 
@@ -15,13 +17,14 @@
     return 1;                       \
 }while(0)
 
-static dataBufferErrorCode create_buffer(char** buffer, size_t size);
-
+//static dataBufferErrorCode create_buffer(char** buffer, size_t size);
+/*
 int buffer_ctor(outputBuffer* buffer, size_t size)
 {
     assert(buffer);
 
-    buffer->Buffer  = NULL;
+    buffer->Buffer        = NULL;
+    buffer->size          = size;
     buffer->bufferPointer = 0;
 
     dataBufferErrorCode err = NO_DATA_BUFFER_ERRORS;
@@ -32,17 +35,20 @@ int buffer_ctor(outputBuffer* buffer, size_t size)
 
     return 0;
 }
-
+*/
+/*
 int buffer_dtor(outputBuffer* buffer)
 {
     assert(buffer);
 
     free(buffer->Buffer);
-    buffer->Buffer  = NULL;
+    buffer->Buffer        = NULL;
+    buffer->size          = (size_t) -1;
     buffer->bufferPointer = 0;
 
     return 0;
 }
+*/
 
 int create_output_file(FILE** file, const char* filename, fileCreateMode modeCode)
 {
@@ -72,6 +78,7 @@ int create_output_file(FILE** file, const char* filename, fileCreateMode modeCod
     return 0;
 }
 
+/*
 static dataBufferErrorCode create_buffer(char** buffer, size_t size)
 {
     assert(buffer);
@@ -85,6 +92,7 @@ static dataBufferErrorCode create_buffer(char** buffer, size_t size)
 
     return NO_DATA_BUFFER_ERRORS;
 }
+*/
 
 int print_to_buffer(outputBuffer* buffer, const char* format, ...)
 {
@@ -94,6 +102,21 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...)
     va_list arguments;
     va_start(arguments, format);
 
+    size_t stringLen = (size_t) vsnprintf(NULL, 0, format, arguments);
+
+    if (buffer->bufferPointer >= (BUFFER_SIZE) - stringLen)
+    {
+        if (buffer->AUTO_FLUSH)
+        {
+            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            clean_buffer(buffer);
+        }
+        else
+        {
+            return 1;
+        }
+    }
+
     buffer->bufferPointer += (size_t) vsprintf(buffer->Buffer + buffer->bufferPointer, format, arguments);
     return 0;
 }
@@ -101,6 +124,19 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...)
 int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
 {
     assert(buffer);
+
+    if (buffer->bufferPointer >= (BUFFER_SIZE) - sizeof(char))
+    {
+        if (buffer->AUTO_FLUSH)
+        {
+            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            clean_buffer(buffer);
+        }
+        else
+        {
+            return 1;
+        }
+    }
 
     (buffer->Buffer)[buffer->bufferPointer] = (char) num;
     (buffer->bufferPointer)++;
@@ -113,6 +149,19 @@ int write_int_to_buffer(outputBuffer* buffer, int num)
     assert(buffer);
 
     char* intPtr = (char*) &num;
+
+    if (buffer->bufferPointer >= (BUFFER_SIZE) - sizeof(int))
+    {
+        if (buffer->AUTO_FLUSH)
+        {
+            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            clean_buffer(buffer);
+        }
+        else
+        {
+            return 1;
+        }
+    }
 
     for (size_t i = 0; i < sizeof(int); i++)
     {
@@ -130,6 +179,19 @@ int write_double_to_buffer(outputBuffer* buffer, double num)
 
     char* doublePtr = (char*) &num;
 
+    if (buffer->bufferPointer >= (BUFFER_SIZE) - sizeof(int))
+    {
+        if (buffer->AUTO_FLUSH)
+        {
+            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            clean_buffer(buffer);
+        }
+        else
+        {
+            return 1;
+        }
+    }
+
     for (size_t i = 0; i < sizeof(double); i++)
     {
         (buffer->Buffer)[buffer->bufferPointer + i] = doublePtr[i];
@@ -140,14 +202,25 @@ int write_double_to_buffer(outputBuffer* buffer, double num)
     return 0;
 }
 
-int write_buffer_to_file(FILE* file, outputBuffer* buffer)
+int write_buffer_to_file(outputBuffer* buffer, FILE* file)
 {
-    assert(file);
+    assert(buffer);
 
     if (fwrite(buffer->Buffer, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
     {
         RET_ERR(FWRITE_ERROR);
     }
+
+    return 0;
+}
+
+int clean_buffer(outputBuffer* buffer)
+{
+    assert(buffer);
+
+    memset(buffer->Buffer, 0, BUFFER_SIZE);
+    
+    buffer->bufferPointer = 0;
 
     return 0;
 }
