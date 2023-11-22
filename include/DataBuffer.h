@@ -12,11 +12,22 @@ enum fileCreateMode {
     TEXT
 };
 
+enum bufferMode {
+    STATIC,
+    DYNAMIC
+};
+
 struct outputBuffer {
     char Buffer[BUFFER_SIZE];
+
+    char* customBuffer;
+    size_t customSize;
+
     size_t bufferPointer;
     FILE* filePointer;
     bool AUTO_FLUSH;
+
+    bufferMode mode;
 };
 
 int buffer_ctor(outputBuffer* buffer, size_t size);

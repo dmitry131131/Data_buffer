@@ -17,38 +17,39 @@
     return 1;                       \
 }while(0)
 
-//static dataBufferErrorCode create_buffer(char** buffer, size_t size);
-/*
+static dataBufferErrorCode create_buffer(char** buffer, size_t size);
+
 int buffer_ctor(outputBuffer* buffer, size_t size)
 {
     assert(buffer);
 
-    buffer->Buffer        = NULL;
-    buffer->size          = size;
+    buffer->customBuffer  = NULL;
+    buffer->customSize    = size;
     buffer->bufferPointer = 0;
+    buffer->mode          = DYNAMIC;
 
     dataBufferErrorCode err = NO_DATA_BUFFER_ERRORS;
-    if ((err = create_buffer(&(buffer->Buffer), size)))
+    if ((err = create_buffer(&(buffer->customBuffer), size)))
     {
         RET_ERR(err);
     }
 
     return 0;
 }
-*/
-/*
+
 int buffer_dtor(outputBuffer* buffer)
 {
     assert(buffer);
 
-    free(buffer->Buffer);
-    buffer->Buffer        = NULL;
-    buffer->size          = (size_t) -1;
+    free(buffer->customBuffer);
+    buffer->customBuffer  = NULL;
+    buffer->customSize    = 0;
     buffer->bufferPointer = 0;
+    buffer->mode          = STATIC;
 
     return 0;
 }
-*/
+
 
 int create_output_file(FILE** file, const char* filename, fileCreateMode modeCode)
 {
@@ -78,7 +79,6 @@ int create_output_file(FILE** file, const char* filename, fileCreateMode modeCod
     return 0;
 }
 
-/*
 static dataBufferErrorCode create_buffer(char** buffer, size_t size)
 {
     assert(buffer);
@@ -92,7 +92,6 @@ static dataBufferErrorCode create_buffer(char** buffer, size_t size)
 
     return NO_DATA_BUFFER_ERRORS;
 }
-*/
 
 int print_to_buffer(outputBuffer* buffer, const char* format, ...)
 {
