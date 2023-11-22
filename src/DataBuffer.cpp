@@ -17,38 +17,41 @@
     return 1;                       \
 }while(0)
 
-//static dataBufferErrorCode create_buffer(char** buffer, size_t size);
-/*
+static dataBufferErrorCode create_buffer(char** buffer, size_t size);
+
+static dataBufferErrorCode custom_buffer_realloc(outputBuffer* buffer);
+
 int buffer_ctor(outputBuffer* buffer, size_t size)
 {
     assert(buffer);
 
-    buffer->Buffer        = NULL;
-    buffer->size          = size;
+    buffer->customBuffer  = NULL;
+    buffer->customSize    = size;
     buffer->bufferPointer = 0;
+    buffer->mode          = DYNAMIC;
 
     dataBufferErrorCode err = NO_DATA_BUFFER_ERRORS;
-    if ((err = create_buffer(&(buffer->Buffer), size)))
+    if ((err = create_buffer(&(buffer->customBuffer), size)))
     {
         RET_ERR(err);
     }
 
     return 0;
 }
-*/
-/*
+
 int buffer_dtor(outputBuffer* buffer)
 {
     assert(buffer);
 
-    free(buffer->Buffer);
-    buffer->Buffer        = NULL;
-    buffer->size          = (size_t) -1;
+    free(buffer->customBuffer);
+    buffer->customBuffer  = NULL;
+    buffer->customSize    = 0;
     buffer->bufferPointer = 0;
+    buffer->mode          = STATIC;
 
     return 0;
 }
-*/
+
 
 int create_output_file(FILE** file, const char* filename, fileCreateMode modeCode)
 {
@@ -78,7 +81,6 @@ int create_output_file(FILE** file, const char* filename, fileCreateMode modeCod
     return 0;
 }
 
-/*
 static dataBufferErrorCode create_buffer(char** buffer, size_t size)
 {
     assert(buffer);
@@ -92,7 +94,6 @@ static dataBufferErrorCode create_buffer(char** buffer, size_t size)
 
     return NO_DATA_BUFFER_ERRORS;
 }
-*/
 
 int print_to_buffer(outputBuffer* buffer, const char* format, ...)
 {
@@ -108,20 +109,45 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...)
 
     if (buffer->bufferPointer >= (BUFFER_SIZE - stringLen))
     {
-        if (buffer->AUTO_FLUSH)
+        if (buffer->mode == DYNAMIC)
         {
-            write_buffer_to_file(buffer, buffer->filePointer);
-            clean_buffer(buffer);
+            if (custom_buffer_realloc(buffer))
+            {
+                print_buffer_error(ALLOC_MEMORY_ERROR);
+                return 1;
+            }
         }
         else
         {
-            return 1;
+            if (buffer->AUTO_FLUSH)
+            {
+                write_buffer_to_file(buffer, buffer->filePointer);
+                clean_buffer(buffer);
+            }
+            else
+            {
+                return 1;
+            }
         }
     }
     
     buffer->bufferPointer += (size_t) vsprintf(buffer->Buffer + buffer->bufferPointer, format, arguments);
 
     return 0;
+}
+
+static dataBufferErrorCode custom_buffer_realloc(outputBuffer* buffer)
+{
+    assert(buffer);
+
+    buffer->customBuffer = (char*) realloc(buffer->customBuffer, buffer->customSize * 2);
+
+    if (!(buffer->customBuffer))
+    {
+        return ALLOC_MEMORY_ERROR;
+    }
+
+    return NO_DATA_BUFFER_ERRORS;
 }
 
 int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
@@ -209,19 +235,19 @@ int write_buffer_to_file(outputBuffer* buffer, FILE* file)
 {
     assert(buffer);
 
-    if (file)
+    char* bufferPtr = NULL;
+    if (buffer->mode == DYNAMIC)
     {
-        if (fwrite(buffer->Buffer, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
-        {
-            RET_ERR(FWRITE_ERROR);
-        }
+        bufferPtr = buffer->customBuffer;
     }
     else
     {
-        if (fwrite(buffer->Buffer, sizeof(char), buffer->bufferPointer, buffer->filePointer) != buffer->bufferPointer)
-        {
-            RET_ERR(FWRITE_ERROR);
-        }
+        bufferPtr = buffer->Buffer;
+    }
+
+    if (fwrite(bufferPtr, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
+    {
+        RET_ERR(FWRITE_ERROR);
     }
 
     return 0;
@@ -231,9 +257,11 @@ int clean_buffer(outputBuffer* buffer)
 {
     assert(buffer);
 
-    memset(buffer->Buffer, 0, BUFFER_SIZE);
-    
-    buffer->bufferPointer = 0;
+    if (buffer->mode == STATIC)
+    {
+        memset(buffer->Buffer, 0, BUFFER_SIZE);
+        buffer->bufferPointer = 0;
+    }
 
     return 0;
 }
