@@ -19,6 +19,8 @@
 
 static dataBufferErrorCode create_buffer(char** buffer, size_t size);
 
+static dataBufferErrorCode custom_buffer_realloc(outputBuffer* buffer);
+
 int buffer_ctor(outputBuffer* buffer, size_t size)
 {
     assert(buffer);
@@ -99,25 +101,53 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...)
     assert(format);
 
     va_list arguments;
+    va_list fakeArguments;
     va_start(arguments, format);
+    va_start(fakeArguments, format);
+    
+    size_t stringLen = (size_t) vsnprintf(NULL, 0, format, fakeArguments);
 
-    size_t stringLen = (size_t) vsnprintf(NULL, 0, format, arguments);
-
-    if (buffer->bufferPointer >= (BUFFER_SIZE) - stringLen)
+    if (buffer->bufferPointer >= (BUFFER_SIZE - stringLen))
     {
-        if (buffer->AUTO_FLUSH)
+        if (buffer->mode == DYNAMIC)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
-            clean_buffer(buffer);
+            if (custom_buffer_realloc(buffer))
+            {
+                print_buffer_error(ALLOC_MEMORY_ERROR);
+                return 1;
+            }
         }
         else
         {
-            return 1;
+            if (buffer->AUTO_FLUSH)
+            {
+                write_buffer_to_file(buffer, buffer->filePointer);
+                clean_buffer(buffer);
+            }
+            else
+            {
+                return 1;
+            }
         }
     }
-
+    
     buffer->bufferPointer += (size_t) vsprintf(buffer->Buffer + buffer->bufferPointer, format, arguments);
+
     return 0;
+}
+
+static dataBufferErrorCode custom_buffer_realloc(outputBuffer* buffer)
+{
+    assert(buffer);
+
+    buffer->customBuffer = (char*) realloc(buffer->customBuffer, buffer->customSize * 2);
+
+    if (!(buffer->customBuffer))
+    {
+        return ALLOC_MEMORY_ERROR;
+    }
+
+    return NO_DATA_BUFFER_ERRORS;
 }
 
 int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
@@ -128,7 +158,7 @@ int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
     {
         if (buffer->AUTO_FLUSH)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            write_buffer_to_file(buffer, buffer->filePointer);
             clean_buffer(buffer);
         }
         else
@@ -153,7 +183,7 @@ int write_int_to_buffer(outputBuffer* buffer, int num)
     {
         if (buffer->AUTO_FLUSH)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            write_buffer_to_file(buffer, buffer->filePointer);
             clean_buffer(buffer);
         }
         else
@@ -182,7 +212,7 @@ int write_double_to_buffer(outputBuffer* buffer, double num)
     {
         if (buffer->AUTO_FLUSH)
         {
-            fwrite(buffer->Buffer, sizeof(char), BUFFER_SIZE, buffer->filePointer);
+            write_buffer_to_file(buffer, buffer->filePointer);
             clean_buffer(buffer);
         }
         else
@@ -205,7 +235,17 @@ int write_buffer_to_file(outputBuffer* buffer, FILE* file)
 {
     assert(buffer);
 
-    if (fwrite(buffer->Buffer, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
+    char* bufferPtr = NULL;
+    if (buffer->mode == DYNAMIC)
+    {
+        bufferPtr = buffer->customBuffer;
+    }
+    else
+    {
+        bufferPtr = buffer->Buffer;
+    }
+
+    if (fwrite(bufferPtr, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
     {
         RET_ERR(FWRITE_ERROR);
     }
@@ -217,9 +257,11 @@ int clean_buffer(outputBuffer* buffer)
 {
     assert(buffer);
 
-    memset(buffer->Buffer, 0, BUFFER_SIZE);
-    
-    buffer->bufferPointer = 0;
+    if (buffer->mode == STATIC)
+    {
+        memset(buffer->Buffer, 0, BUFFER_SIZE);
+        buffer->bufferPointer = 0;
+    }
 
     return 0;
 }
