@@ -236,17 +236,11 @@ int write_buffer_to_file(outputBuffer* buffer, FILE* file)
 {
     assert(buffer);
 
-    char* bufferPtr = NULL;
-    if (buffer->mode == DYNAMIC)
-    {
-        bufferPtr = buffer->customBuffer;
-    }
-    else
-    {
-        bufferPtr = buffer->Buffer;
-    }
+    char* bufferPtr = (buffer->mode)? buffer->customBuffer : buffer->Buffer;
 
-    if (fwrite(bufferPtr, sizeof(char), buffer->bufferPointer, file) != buffer->bufferPointer)
+    FILE* filePtr = (file)? file : buffer->filePointer;
+
+    if (fwrite(bufferPtr, sizeof(char), buffer->bufferPointer, filePtr) != buffer->bufferPointer)
     {
         RET_ERR(FWRITE_ERROR);
     }
