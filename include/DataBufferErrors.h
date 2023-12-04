@@ -10,7 +10,8 @@ enum dataBufferErrorCode {
     ALLOC_MEMORY_ERROR,
     WRONG_FILE_CREATE_MODE,
     FILE_CREATING_ERROR,
-    FWRITE_ERROR
+    FWRITE_ERROR,
+    INPUT_FILE_DESCRIPTOR_ERROR
 };
 
 void print_buffer_error(dataBufferErrorCode error);

@@ -46,6 +46,8 @@ int write_double_to_buffer(outputBuffer* buffer, double num);
 
 int write_buffer_to_file(outputBuffer* buffer, FILE* file = nullptr);
 
+int read_file_in_buffer(outputBuffer* buffer, FILE* file);
+
 int clean_buffer(outputBuffer* buffer);
 
 #endif

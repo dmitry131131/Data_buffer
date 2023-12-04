@@ -30,6 +30,7 @@ void print_buffer_error_message(dataBufferErrorCode error, FILE* stream)
         CHECK_CODE(WRONG_FILE_CREATE_MODE,      "Wrong file creating mode given! Try to use TEXT or BIN mode.\n");
         CHECK_CODE(FILE_CREATING_ERROR,         "Error in file creating process!\n");
         CHECK_CODE(FWRITE_ERROR,                "Error in writing buffer to file!\n");
+        CHECK_CODE(INPUT_FILE_DESCRIPTOR_ERROR, "Bad input file descriptor!\n");
 
     default:
         fprintf(stream, "Unknown error!\n");

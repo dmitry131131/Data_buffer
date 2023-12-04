@@ -3,6 +3,7 @@
  * @brief Data buffer functions sources
 */
 #include <stdio.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -261,6 +262,31 @@ int clean_buffer(outputBuffer* buffer)
     {
         memset(buffer->Buffer, 0, BUFFER_SIZE);
         buffer->bufferPointer = 0;
+    }
+
+    return 0;
+}
+
+int read_file_in_buffer(outputBuffer* buffer, FILE* file)
+{
+    assert(buffer);
+    assert(file);
+
+    struct stat buff = {};
+    if (fstat(fileno(file), &buff))
+    {
+        return 1;
+    }
+    if (buff.st_size < 0) return 1;
+
+    if (buffer_ctor(buffer, (size_t) buff.st_size))
+    {
+        return 1;
+    }
+
+    if (fread(buffer->customBuffer, sizeof(char), buffer->customSize, file) != buffer->customSize)
+    {
+        return 1;
     }
 
     return 0;
