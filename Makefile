@@ -31,6 +31,7 @@ objects = $(patsubst $(SourcePrefix)%.cpp, $(BuildPrefix)%.o, $(Source))
 
 all : lib
 
+lib : CXXFLAGS = -O2
 lib : prepare folder $(objects)
 	cd build && ar rc libDataBuffer.a DataBuffer.o DataBufferErrors.o 
 

@@ -14,7 +14,7 @@ int main()
     print_to_buffer(&buff, "sdfsfsf[][]\n"
                            "sdcscsccscs");
 
-    write_buffer_to_file(file, &buff);
+    write_buffer_to_file(&buff, file);
 
     buffer_dtor(&buff);
 
