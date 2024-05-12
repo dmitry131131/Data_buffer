@@ -40,6 +40,8 @@ int print_to_buffer(outputBuffer* buffer, const char* format, ...);
 
 int write_char_to_buffer(outputBuffer* buffer, unsigned char num);
 
+int write_chars_to_buffer(outputBuffer* buffer, size_t n, ...);
+
 int write_int_to_buffer(outputBuffer* buffer, int num);
 
 int write_double_to_buffer(outputBuffer* buffer, double num);

@@ -174,6 +174,22 @@ int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
     return 0;
 }
 
+int write_chars_to_buffer(outputBuffer* buffer, size_t n, ...)
+{
+    assert(buffer);
+
+    va_list factor;     
+    va_start(factor, n);   
+    
+    for (size_t i = 0; i < n; i++)
+    {
+        write_char_to_buffer(buffer, va_arg(factor, unsigned int));
+    }
+
+    va_end(factor);
+    return 0;
+}
+
 int write_int_to_buffer(outputBuffer* buffer, int num)
 {
     assert(buffer);
