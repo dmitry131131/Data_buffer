@@ -168,25 +168,12 @@ int write_char_to_buffer(outputBuffer* buffer, unsigned char num)
         }
     }
 
-    (buffer->Buffer)[buffer->bufferPointer] = (char) num;
+    if (buffer->mode == STATIC)
+        (buffer->Buffer)[buffer->bufferPointer] = (char) num;
+    else if (buffer->mode == DYNAMIC)
+        (buffer->customBuffer)[buffer->bufferPointer] = (char) num;
     (buffer->bufferPointer)++;
 
-    return 0;
-}
-
-int write_chars_to_buffer(outputBuffer* buffer, size_t n, ...)
-{
-    assert(buffer);
-
-    va_list factor;     
-    va_start(factor, n);   
-    
-    for (size_t i = 0; i < n; i++)
-    {
-        write_char_to_buffer(buffer, va_arg(factor, unsigned int));
-    }
-
-    va_end(factor);
     return 0;
 }
 
@@ -209,13 +196,31 @@ int write_int_to_buffer(outputBuffer* buffer, int num)
         }
     }
 
+    char* bufferPtr = (buffer->mode)? buffer->customBuffer : buffer->Buffer;
+
     for (size_t i = 0; i < sizeof(int); i++)
     {
-        (buffer->Buffer)[buffer->bufferPointer + i] = intPtr[i];
+        (bufferPtr)[buffer->bufferPointer + i] = intPtr[i];
     }
 
     buffer->bufferPointer += sizeof(int);
 
+    return 0;
+}
+
+int write_chars_to_buffer(outputBuffer* buffer, size_t n, ...)
+{
+    assert(buffer);
+
+    va_list factor;     
+    va_start(factor, n);   
+    
+    for (size_t i = 0; i < n; i++)
+    {
+        write_char_to_buffer(buffer, va_arg(factor, unsigned int));
+    }
+
+    va_end(factor);
     return 0;
 }
 
